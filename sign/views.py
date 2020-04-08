@@ -70,10 +70,13 @@ def sign_index(request, eid):
 
 @login_required
 def sign_index_action(request, eid):
+    print(eid)
     event = get_object_or_404(Event, id=eid)
-    phone = request.POST.get('phone', '')
+    phone = request.POST.get('phone', '').strip()
     print(phone)
+    print(type(phone))
     result = Guest.objects.filter(phone=phone)
+    print(result)
     if not result:
         return render(request, 'sign_index.html', {'event': event, 'hint': 'phone error.'})
 
@@ -87,3 +90,10 @@ def sign_index_action(request, eid):
     else:
         Guest.objects.filter(phone=phone, event_id=eid).update(sign='1')
         return render(request, 'sign_index.html', {'event': event, 'hint': '签到成功', 'guest': result})
+
+
+@login_required
+def logout(request):
+    auth.logout(request)
+    response = HttpResponseRedirect('/index/')
+    return response
