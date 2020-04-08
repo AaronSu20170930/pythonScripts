@@ -43,10 +43,16 @@
                                 <td>{{ guest.realname }}</td>
                                 <td>{{ guest.phone }}</td>
                                 <td>{{ guest.email }}</td>
-                                <td>{{ guest.sign }}</td>
+                                <td>
+                                    {% if guest.sign == False %}
+                                        <p>未签到</p>
+                                    {% else %}
+                                        <p>已签到</p>
+                                    {%  endif %}
+                                </td>
                                 <td>{{ guest.event }}</td>
                                 <td>
-                                    <a href="/sign_index/{{ event.id }}/" target="{{ event.id }}_blank">
+                                    <a href="/sign_index/{{ guest.event_id }}/" target="{{ guest.event_id }}_blank">
                                         签到
                                     </a>
                                 </td>
