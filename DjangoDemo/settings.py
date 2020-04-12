@@ -25,8 +25,7 @@ SECRET_KEY = '=ai5i%^7!*9s*xdufc*p48k-r7fgnvgb42)@8e@3zl_zad6b&p'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -38,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sign',
-    'bootstrap3',
+    'bootstrap3'
 ]
 
 MIDDLEWARE = [
@@ -134,5 +133,5 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
-
+STATIC_ROOT = '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/django/contrib/admin/static/'
 STATIC_URL = '/static/'

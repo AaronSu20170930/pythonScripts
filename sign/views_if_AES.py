@@ -1,17 +1,89 @@
+# 使用AES加密算法的接口文件
+
 from django.http import JsonResponse
 from sign.models import Event, Guest
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.utils import IntegrityError
-import time
+import time, base64, json
+from Crypto.Cipher import AES
+
+# AES 加密算法
+BS = 16
+unpad = lambda s : s[0: - ord(s[-1])]
+
+
+def decryptBase64(src):
+    return base64.urlsafe_b64decode(src)
+
+
+def decryptAES(src, key):
+    src = decryptBase64(src)
+    iv = b'1172311105789011'
+    try:
+        cryptor = AES.new(key, AES.MODE_CBC, iv)
+        text = cryptor.decrypt(src).decode()
+    # 如果加密字符串被篡改，则无法解密成功，抛出异常
+    except ValueError:
+        return '加密错误'
+
+    return unpad(text)
+
+
+def aes_encryption(request):
+    app_key = 'W7v4D60fds2Cmk2U'
+    if request.method == 'POST':
+        data = request.POST.get('data', '')
+    else:
+        return '错误'
+
+    # 解密
+    decode = decryptAES(data, app_key)
+    if decode == '加密错误':
+        return '错误'
+    else:
+        # 转化为字典
+        dict_data = json.loads(decode)
+        return dict_data
+
+
+def encryptBase64(src):
+    return base64.urlsafe_b64encode(src)
+
+
+def encryptAES(src, key):
+    iv = b'1172311105789011'
+    pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
+    BS = 16
+    cryptor = AES.new(key, AES.MODE_CBC, iv)
+    ciphertext = cryptor.encrypt(pad(src))
+    return encryptBase64(ciphertext)
+
+def get_AES_code(request):
+    app_key = 'W7v4D60fds2Cmk2U'
+    print(request)
+    payload = {}
+    for item in request.POST:
+        print(item)
+        print(request.POST.get(item))
+        payload[item] = request.POST.get(item)
+    print(payload)
+    j = json.dumps(payload)
+    print(j)
+    encoded = encryptAES(j, app_key).decode()
+    return JsonResponse({'data': encoded})
+
 
 def add_event(request):
-    print(request)
-    eid = request.POST.get('eid', '')
-    name = request.POST.get('name', '')
-    limit = request.POST.get('limit', '')
-    status = request.POST.get('status', '')
-    address = request.POST.get('address', '')
-    start_time = request.POST.get('start_time', '')
+    dict_data = aes_encryption(request)
+    if dict_data == '错误':
+        return JsonResponse({'status': 10011, 'message': '请求错误'})
+
+    eid = dict_data['eid']
+    name = dict_data['name']
+    limit = dict_data['limit']
+    status = dict_data['status']
+    address = dict_data['status']
+    start_time = dict_data['start_time']
 
     if eid == '' or name == '' or limit == '' or address == '' or start_time == '':
         return JsonResponse({'status': 10021, 'message': '参数错误！'})
@@ -39,10 +111,14 @@ def add_event(request):
 
 
 def add_guest(request):
-    eid = request.POST.get('eid', '')
-    realname = request.POST.get('realname', '')
-    phone = request.POST.get('phone', '')
-    email = request.POST.get('email', '')
+    dict_data = aes_encryption(request)
+    if dict_data == '错误':
+        return JsonResponse({'status': 10011, 'message': '请求错误'})
+
+    eid = dict_data['eid']
+    realname = dict_data['realname']
+    phone = dict_data['phone']
+    email = dict_data['email']
 
     if eid == '' or realname == '' or phone == '':
         return JsonResponse({'status': 10021, 'message': '参数错误。'})
@@ -62,8 +138,10 @@ def add_guest(request):
         return JsonResponse({'status': 10024, 'message': '参与人数已满。'})
 
     event_time = Event.objects.get(id=eid).start_time
-    etime = str(event_time).split('.')[0]
-    timeArray = time.strptime(etime, '%Y-%m-%d %H:%M:%S')
+    print(event_time)
+    etime = str(event_time).split('+')[0]
+    print(etime)
+    timeArray = time.strptime(etime, "%Y-%m-%d %H:%M:%S")
     e_time = int(time.mktime(timeArray))
 
     now_time = str(time.time())
@@ -81,8 +159,12 @@ def add_guest(request):
 
 
 def get_event_list(request):
-    eid = request.GET.get('eid', '')
-    name = request.GET.get('name', '')
+    dict_data = aes_encryption(request)
+    if dict_data == '错误':
+        return JsonResponse({'status': 10011, 'message': '请求错误'})
+
+    eid = dict_data['eid']
+    name = dict_data['name']
 
     if eid == '' and name == '':
         return JsonResponse({'status': 10021, 'message': '参数错误。'})
@@ -119,8 +201,17 @@ def get_event_list(request):
 
 
 def get_guest_list(request):
-    eid = request.GET.get('eid', '')
-    phone = request.GET.get('phone', '')
+    dict_data = aes_encryption(request)
+    if dict_data == '错误':
+        return JsonResponse({'status': 10011, 'message': '请求错误'})
+    if 'eid' in dict_data.keys():
+        eid = dict_data['eid']
+    else:
+        eid = ''
+    if 'phone' in dict_data.keys():
+        phone = dict_data['phone']
+    else:
+        phone = ''
 
     if eid == '':
         return JsonResponse({'status': 10021, 'message': 'EID不可为空。'})
@@ -151,8 +242,12 @@ def get_guest_list(request):
 
 
 def user_sign(request):
-    eid = request.POST.get('eid', '')
-    phone = request.POST.get('phone', '')
+    dict_data = aes_encryption(request)
+    if dict_data == '错误':
+        return JsonResponse({'status': 10011, 'message': '请求错误'})
+
+    eid = dict_data['eid']
+    phone = dict_data['phone']
 
     if eid == '' or phone == '':
         return JsonResponse({'status': 10021, 'message': '参数错误。'})
@@ -166,7 +261,7 @@ def user_sign(request):
         return JsonResponse({'status': 10023, 'message': '发布会状态不可用。'})
 
     event_time = Event.objects.get(id=eid).start_time
-    etime = str(event_time).split('.')[0]
+    etime = str(event_time).split('+')[0]
     timeArray = time.strptime(etime, '%Y-%m-%d %H:%M:%S')
     e_time = int(time.mktime(timeArray))
 
